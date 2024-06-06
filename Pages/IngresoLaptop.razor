@@ -1,0 +1,168 @@
+﻿@page "/IngresoDispositivos"
+
+<h3>Ingreso de Dispositivos</h3>
+
+@inject Blazored.LocalStorage.ILocalStorageService localStorage
+@inject NavigationManager NavigationManager
+
+<EditForm Model="@dispositivo" OnValidSubmit="@GuardarDispositivo">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div>
+        <label for="numeroSerie">Número de Serie: </label>
+        <InputText id="numeroSerie" @bind-Value="dispositivo.NumeroSerie" class="form-control" />
+        <ValidationMessage For="() => dispositivo.NumeroSerie" />
+    </div>
+
+    <div>
+        <label for="marca">Marca: </label>
+        <InputText id="marca" @bind-Value="dispositivo.Marca" class="form-control" />
+        <ValidationMessage For="() => dispositivo.Marca" />
+    </div>
+
+    <div>
+        <label for="modelo">Modelo: </label>
+        <InputText id="modelo" @bind-Value="dispositivo.Modelo" class="form-control" />
+        <ValidationMessage For="() => dispositivo.Modelo" />
+    </div>
+
+    @if (dispositivo is Laptop)
+    {
+        <div>
+            <label for="memoriaRam">Memoria RAM (GB): </label>
+            <InputNumber id="memoriaRam" @bind-Value="((Laptop)dispositivo).MemoriaRam" class="form-control" />
+            <ValidationMessage For="() => ((Laptop)dispositivo).MemoriaRam" />
+        </div>
+
+        <div>
+            <label for="almacenamiento">Almacenamiento (GB): </label>
+            <InputNumber id="almacenamiento" @bind-Value="((Laptop)dispositivo).Almacenamiento" class="form-control" />
+            <ValidationMessage For="() => ((Laptop)dispositivo).Almacenamiento" />
+        </div>
+    }
+    else if (dispositivo is Smartphone)
+    {
+        <div>
+            <label for="sistemaOperativo">Sistema Operativo: </label>
+            <InputText id="sistemaOperativo" @bind-Value="((Smartphone)dispositivo).SistemaOperativo" class="form-control" />
+            <ValidationMessage For="() => ((Smartphone)dispositivo).SistemaOperativo" />
+        </div>
+
+        <div>
+            <label for="numeroCamaras">Número de Cámaras: </label>
+            <InputNumber id="numeroCamaras" @bind-Value="((Smartphone)dispositivo).NumeroCamaras" class="form-control" />
+            <ValidationMessage For="() => ((Smartphone)dispositivo).NumeroCamaras" />
+        </div>
+    }
+    else if (dispositivo is Tablet)
+    {
+        <div>
+            <label for="tamanoPantalla">Tamaño de Pantalla (pulgadas): </label>
+            <InputNumber id="tamanoPantalla" @bind-Value="((Tablet)dispositivo).TamanoPantalla" class="form-control" />
+            <ValidationMessage For="() => ((Tablet)dispositivo).TamanoPantalla" />
+        </div>
+
+        <div>
+            <label for="soporteStylus">Soporte para Stylus: </label>
+            <InputCheckbox id="soporteStylus" @bind-Value="((Tablet)dispositivo).SoporteStylus" class="form-control" />
+            <ValidationMessage For="() => ((Tablet)dispositivo).SoporteStylus" />
+        </div>
+    }
+
+    <div class="form-group">
+        <button type="submit" class="btn btn-primary">Guardar</button>
+    </div>
+</EditForm>
+
+<p>Total de dispositivos ingresados: @listaDispositivos.Count</p>
+
+@if (listaDispositivos != null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Numero de serie</th>
+                <th>Marca</th>
+                <th>Modelo</th>
+                <th>Ram</th>
+                <th>Almacenamiento</th>
+              
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var unaRevista in listaDispositivos)
+            {
+                <tr>
+                    <td>@unaRevista.NumeroSerie</td>
+                    <td>@unaRevista.Marca</td>
+                    <td>@unaRevista.Modelo</td>
+                   
+                    
+                    <td><button class="btn btn-warning" @onclick="@(() => NavigationManager.NavigateTo($"/RevistaEditar/{unaRevista.NumeroSerie}"))">editar</button></td>
+                    <td><button class="btn btn-danger" @onclick="@(() => Borrar(unaRevista.NumeroSerie))">Borrar</button></td>
+
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    Dispositivo dispositivo = new Laptop();  // Default to Laptop for the form
+    List<Dispositivo> listaDispositivos = new List<Dispositivo>();
+
+    protected async Task GuardarDispositivo()
+    {
+        listaDispositivos.Add(dispositivo);
+        dispositivo = new Laptop();  // Reset form to default to Laptop
+
+        await localStorage.SetItemAsync("listaDispositivos", listaDispositivos);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        listaDispositivos = await localStorage.GetItemAsync<List<Dispositivo>>("listaDispositivos");
+
+        if (listaDispositivos == null)
+        {
+            listaDispositivos = new List<Dispositivo>();
+        }
+    }
+
+    protected async Task Borrar(string numeroSerie)
+    {
+        listaDispositivos.Remove(listaDispositivos.First(c => c.NumeroSerie == numeroSerie));
+        await localStorage.SetItemAsync("listaDispositivos", listaDispositivos);
+    }
+}
+
+@code {
+    public class Dispositivo
+    {
+        public string NumeroSerie { get; set; }
+        public string Marca { get; set; }
+        public string Modelo { get; set; }
+    }
+
+    public class Laptop : Dispositivo
+    {
+        public int MemoriaRam { get; set; }
+        public int Almacenamiento { get; set; }
+    }
+
+    public class Smartphone : Dispositivo
+    {
+        public string SistemaOperativo { get; set; }
+        public int NumeroCamaras { get; set; }
+    }
+
+    public class Tablet : Dispositivo
+    {
+        public int TamanoPantalla { get; set; }
+        public bool SoporteStylus { get; set; }
+    }
+
+
+
+}
