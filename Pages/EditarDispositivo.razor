@@ -1,17 +1,46 @@
-﻿@page "/IngresoDispositivos"
+﻿@page "/DispositivoEditar/{numeroSerie}"
 
-<h3>Ingreso de Dispositivos</h3>
+<h3>Editar Dispositivo</h3>
 
 @inject Blazored.LocalStorage.ILocalStorageService localStorage
 @inject NavigationManager NavigationManager
+@code {
+    [Parameter] public string numeroSerie { get; set; }
+    private Dispositivo dispositivo;
 
-<EditForm Model="@dispositivo" OnValidSubmit="@GuardarDispositivo">
+    protected override async Task OnInitializedAsync()
+    {
+        var listaDispositivos = await localStorage.GetItemAsync<List<Dispositivo>>("listaDispositivos");
+        dispositivo = listaDispositivos?.FirstOrDefault(d => d.NumeroSerie == numeroSerie);
+
+        if (dispositivo == null)
+        {
+            // Handle the case when the device is not found, maybe redirect or show a message
+        }
+    }
+
+    private async Task GuardarCambios()
+    {
+        var listaDispositivos = await localStorage.GetItemAsync<List<Dispositivo>>("listaDispositivos");
+        var index = listaDispositivos.FindIndex(d => d.NumeroSerie == numeroSerie);
+
+        if (index >= 0)
+        {
+            listaDispositivos[index] = dispositivo;
+            await localStorage.SetItemAsync("listaDispositivos", listaDispositivos);
+        }
+
+        NavigationManager.NavigateTo("/IngresoDispositivos");
+    }
+}
+
+<EditForm Model="@dispositivo" OnValidSubmit="@GuardarCambios">
     <DataAnnotationsValidator />
     <ValidationSummary />
 
     <div>
         <label for="numeroSerie">Número de Serie: </label>
-        <InputText id="numeroSerie" @bind-Value="dispositivo.NumeroSerie" class="form-control" />
+        <InputText id="numeroSerie" @bind-Value="dispositivo.NumeroSerie" class="form-control" Disabled="true" />
         <ValidationMessage For="() => dispositivo.NumeroSerie" />
     </div>
 
@@ -71,73 +100,9 @@
     }
 
     <div class="form-group">
-        <button type="submit" class="btn btn-primary">Guardar</button>
+        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
     </div>
 </EditForm>
-
-
-
-<p>Dispositivos ingresados contador: @listaDispositivos.Count</p>
-
-@if (listaDispositivos != null)
-{
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Numero de serie</th>
-                <th>Marca</th>
-                <th>Modelo</th>
-                <th>Ram</th>
-                <th>Almacenamiento</th>
-              
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var unaRevista in listaDispositivos)
-            {
-                <tr>
-                    <td>@unaRevista.NumeroSerie</td>
-                    <td>@unaRevista.Marca</td>
-                    <td>@unaRevista.Modelo</td>
-                   
-                    
-                    <td><button class="btn btn-warning" @onclick="@(() => NavigationManager.NavigateTo($"/RevistaEditar/{unaRevista.NumeroSerie}"))">editar</button></td>
-                    <td><button class="btn btn-danger" @onclick="@(() => Borrar(unaRevista.NumeroSerie))">Borrar</button></td>
-
-                </tr>
-            }
-        </tbody>
-    </table>
-}
-
-@code {
-    Dispositivo dispositivo = new Laptop();  // Default to Laptop for the form
-    List<Dispositivo> listaDispositivos = new List<Dispositivo>();
-
-    protected async Task GuardarDispositivo()
-    {
-        listaDispositivos.Add(dispositivo);
-        dispositivo = new Laptop();  // Reset form to default to Laptop
-
-        await localStorage.SetItemAsync("listaDispositivos", listaDispositivos);
-    }
-
-    protected override async Task OnInitializedAsync()
-    {
-        listaDispositivos = await localStorage.GetItemAsync<List<Dispositivo>>("listaDispositivos");
-
-        if (listaDispositivos == null)
-        {
-            listaDispositivos = new List<Dispositivo>();
-        }
-    }
-
-    protected async Task Borrar(string numeroSerie)
-    {
-        listaDispositivos.Remove(listaDispositivos.First(c => c.NumeroSerie == numeroSerie));
-        await localStorage.SetItemAsync("listaDispositivos", listaDispositivos);
-    }
-}
 
 @code {
     public class Dispositivo
@@ -164,7 +129,4 @@
         public int TamanoPantalla { get; set; }
         public bool SoporteStylus { get; set; }
     }
-
-
-
 }
